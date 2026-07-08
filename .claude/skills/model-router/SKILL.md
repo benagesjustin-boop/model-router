@@ -14,7 +14,7 @@ allowed-tools:
 
 # Model Router v2 — Selector de patrón de orquestación
 
-Cuatro patrones, un selector, un contrato de executor unificado. Base de evidencia: `Investigaciones/model-router-v2/00 Brief — Model Router v2, orquestación y ahorro de tokens.md` (deep-dive 2026-07-07, 7 agents + abogado del diablo).
+Cuatro patrones, un selector, un contrato de executor unificado. Base de evidencia: deep-dive propio (7 agents en paralelo + abogado del diablo, 2026-07) sobre docs de Anthropic y uso real en producción.
 
 **Principio rector (Anthropic):** un agente usa ~4x los tokens de un chat; multi-agent ~15x. La orquestación es un gate de costo-beneficio, no un default. Descomponer por FRONTERAS DE CONTEXTO, no por fases del problema. Si dudás → P0.
 
@@ -60,7 +60,7 @@ Todo prompt de executor incluye, sin excepción:
 
 ## Verificación — en artefactos, nunca en el transcript
 
-Los agentes generan "completion language" sin importar el estado real (confirmado externamente y 2x en este vault). Antes de reportar cualquier pieza como completa:
+Los agentes generan "completion language" sin importar el estado real (confirmado externamente y 2x en uso propio). Antes de reportar cualquier pieza como completa:
 
 1. `ls` de cada path esperado.
 2. Leer y confirmar no-vacío / formato correcto.
@@ -93,7 +93,7 @@ Sin agentes. El orquestador hace el trabajo directo con sus tools. El ahorro vie
 **Cuándo:** código con lógica de negocio, multi-move, dependencias secuenciales. Lo que v1 prohibía — ahora tiene patrón propio, validado 3x en producción (JARVIS Sprints 7, 8, 9).
 
 **Estructura:**
-1. **Pensar caro UNA vez:** Fable/Opus escribe el war-game move-by-move (no un plan lineal): por move → contrato/firma, reglas duras, fallo más probable + señal + contramovimiento, test, verificación del orquestador. Anatomía completa en [[War-Gaming — Extraer inteligencia de un modelo caro]]. Se guarda en `Investigaciones/Wargames/`.
+1. **Pensar caro UNA vez:** Fable/Opus escribe el war-game move-by-move (no un plan lineal): por move → contrato/firma, reglas duras, fallo más probable + señal + contramovimiento, test, verificación del orquestador. El war-game se guarda como archivo markdown versionado junto al proyecto.
 2. **Ejecutar por move:** un executor Sonnet por move (contrato de executor arriba + el move pegado literal). Moves dependientes = SECUENCIAL, nunca paralelo. Moves genuinamente independientes pueden ir en paralelo solo si tocan archivos disjuntos.
 3. **Gate entre moves (ground truth per step):** el orquestador verifica en disco + corre la suite de tests ANTES de lanzar el siguiente move. Sin verde, no hay move siguiente. (Por qué: error compuesto — 85% de acierto por paso = ~20% a 10 pasos; el gate corta la acumulación.)
 4. **Anti-self-grading cuando aplica:** en features con tests nuevos, el que escribe los tests ≠ el que escribe la implementación (dos executors distintos).
@@ -104,10 +104,10 @@ Sin agentes. El orquestador hace el trabajo directo con sus tools. El ahorro vie
 **Cuándo:** el único caso donde multi-agent paralelo GANA (Anthropic): research breadth-first con sub-preguntas independientes que exceden lo que una sesión cubre secuencialmente rápido.
 
 **Reglas:**
-- Vault-first ANTES de decomponer: lo que el vault ya tiene no se investiga afuera.
+- Base de conocimiento propia ANTES de decomponer: lo que ya tenés documentado no se investiga afuera.
 - 5-8 sub-preguntas independientes + 1 abogado del diablo, TODOS en un solo mensaje (paralelo real), workers Sonnet.
 - Delegación con contrato (Anthropic): objetivo explícito + formato de output (JSON con claims/fuentes/confianza) + guía de tools + límites. Delegación vaga = trabajo duplicado.
-- Retorno = hallazgos condensados; el orquestador sintetiza y persiste (raws + brief al vault).
+- Retorno = hallazgos condensados; el orquestador sintetiza y persiste (raws + brief a tu base de conocimiento).
 - No relanzar un agente para repreguntar algo chico — SendMessage al agente existente conserva su contexto.
 
 ---
@@ -119,6 +119,6 @@ Paso 0: selector → "Patrón: PX — motivo" (1 línea visible)
 P0 → hacerlo directo (effort ≤high)
 P1 → brief (inline si sesión cara) → checklist → confirm gate → executors paralelos → verificar disco
 P2 → war-game escrito → confirm → executor Sonnet por move → gate disco+tests entre moves → cierre humano
-P3 → vault-first → decomponer → fan-out paralelo Sonnet + devil → sintetizar → persistir
+P3 → conocimiento propio primero → decomponer → fan-out paralelo Sonnet + devil → sintetizar → persistir
 Transversal: contrato de executor completo · verificación en artefactos · retry clasificado (haiku→sonnet→stop) · effort ≤high
 ```
